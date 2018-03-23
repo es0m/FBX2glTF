@@ -25,7 +25,12 @@
 #include "FBX2glTF.h"
 #include "utils/String_Utils.h"
 #include "utils/File_Utils.h"
+#ifdef HAVE_FBX
 #include "Fbx2Raw.h"
+#endif
+#ifdef HAVE_OBJ
+#include "Obj2Raw.h"
+#endif
 #include "Raw2Gltf.h"
 
 bool verboseOutput = false;
@@ -221,11 +226,32 @@ Copyright (c) 2016-2017 Oculus VR, LLC.
     if (verboseOutput) {
         fmt::printf("Loading FBX File: %s\n", inputPath);
     }
-    if (!LoadFBXFile(raw, inputPath.c_str(), "png;jpg;jpeg")) {
-        fmt::fprintf(stderr, "ERROR:: Failed to parse FBX: %s\n", inputPath);
-        return 1;
+    if ( inputPath.size()<4 ) {
+      return 1;
     }
-
+    if ( std::equal(inputPath.rbegin(), inputPath.rend(), std::string("obj").rbegin()) ) {
+    #ifdef HAVE_OBJ
+      if (!LoadOBJFile(raw, inputPath.c_str(), "png;jpg;jpeg")) {
+          fmt::fprintf(stderr, "ERROR:: Failed to parse OBJ: %s\n", inputPath);
+          return 1;
+      }
+    #else
+      fmt::fprintf(stderr, "ERROR:: OBJ not supported: %s\n", inputPath);
+      return 1;
+    #endif
+    } 
+    else 
+    {
+    #ifdef HAVE_FBX
+      if (!LoadFBXFile(raw, inputPath.c_str(), "png;jpg;jpeg")) {
+          fmt::fprintf(stderr, "ERROR:: Failed to parse FBX: %s\n", inputPath);
+          return 1;
+      }
+    #else
+      fmt::fprintf(stderr, "ERROR:: FBX not supported: %s\n", inputPath);
+      return 1;
+    #endif
+    }
     if (!texturesTransforms.empty()) {
         raw.TransformTextures(texturesTransforms);
     }

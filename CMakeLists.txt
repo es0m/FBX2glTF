@@ -14,14 +14,37 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
 include(ExternalProject)
 
 # FBX
-find_package(FBX REQUIRED)
+find_package(FBX)
 if (NOT FBXSDK_FOUND)
-  message(FATAL_ERROR
+  message(WARNING
     "Can't find FBX SDK in either:\n"
     " - Mac OS X: ${FBXSDK_APPLE_ROOT}\n"
     " - Windows: ${FBXSDK_WINDOWS_ROOT}\n"
     " - Linux: ${FBXSDK_LINUX_ROOT}"
 )
+else()
+  set(SOURCE_FILES
+    ${SOURCE_FILES}
+    src/Fbx2Raw.cpp
+    )
+  add_definitions(-DHAVE_FBX=1)
+
+endif()
+
+if ( RDBASE_DIR ) 
+  set(SOURCE_FILES
+    ${SOURCE_FILES}
+    ${RDBASE_DIR}/rd/base/trimesh.h 
+    ${RDBASE_DIR}/rd/base/trimesh.cpp 
+    ${RDBASE_DIR}/rd/base/trimesh_io.h 
+    ${RDBASE_DIR}/rd/base/trimesh_io.cpp 
+    ${RDBASE_DIR}/rd/base/configfile.h 
+    ${RDBASE_DIR}/rd/base/configfile.cpp 
+    ${RDBASE_DIR}/rd/math/math.h 
+    ${RDBASE_DIR}/rd/math/math.cpp 
+    src/Obj2Raw.cpp
+    )
+  add_definitions(-DHAVE_OBJ=1)
 endif()
 
 # DRACO
@@ -107,6 +130,17 @@ ExternalProject_Add(CxxOpts
 )
 set(CXXOPTS_INCLUDE_DIR "${CMAKE_BINARY_DIR}/cxxopts/src/CxxOpts/include")
 
+# tinyobjloader
+ExternalProject_Add(TOL
+  PREFIX tol
+  GIT_REPOSITORY https://github.com/soyoyo/tinyobjloader
+  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping TOL configure step."
+  BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Skipping TOL build step."
+  INSTALL_COMMAND ${CMAKE_COMMAND} -E echo "Skipping TOL install step."
+)
+set(TOL_INCLUDE_DIR "${CMAKE_BINARY_DIR}/tol/")
+
+
 # FMT
 ExternalProject_Add(Fmt
   PREFIX fmt
@@ -129,12 +163,11 @@ if (APPLE)
     set(FRAMEWORKS ${CF_FRAMEWORK})
 endif()
 
-set(SOURCE_FILES
+set(SOURCE_FILES ${SOURCE_FILES}
         src/utils/File_Utils.cpp
         src/utils/Image_Utils.cpp
         src/utils/String_Utils.cpp
         src/main.cpp
-        src/Fbx2Raw.cpp
         src/Raw2Gltf.cpp
         src/RawModel.cpp
         src/glTF/BufferData.cpp
@@ -181,13 +214,10 @@ target_link_libraries(FBX2glTF
   ${CMAKE_THREAD_LIBS_INIT}
   ${DRACO_LIB}
   ${FMT_LIB}
-  optimized ${FBXSDK_LIBRARY}
-  debug ${FBXSDK_LIBRARY_DEBUG}
 )
 
 target_include_directories(FBX2glTF PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/src
-  ${FBXSDK_INCLUDE_DIR}
   ${DRACO_INCLUDE_DIR}
   ${MATHFU_INCLUDE_DIRS}
   ${FIFO_MAP_INCLUDE_DIR}
@@ -196,6 +226,21 @@ target_include_directories(FBX2glTF PUBLIC
   ${STB_INCLUDE_DIR}
   ${CPPCODEC_INCLUDE_DIR}
   ${FMT_INCLUDE_DIR}
+  ${TOL_INCLUDE_DIR}
 )
+if ( FBXSDK_FOUND ) 
+  target_link_libraries(FBX2glTF
+    optimized ${FBXSDK_LIBRARY}
+    debug ${FBXSDK_LIBRARY_DEBUG}
+  )
 
+  target_include_directories(FBX2glTF PUBLIC
+    ${FBXSDK_INCLUDE_DIR}
+  )
+endif ()
+if ( RDBASE_DIR ) 
+  target_include_directories(FBX2glTF PUBLIC
+    ${RDBASE_DIR}
+  )
+endif()
 install (TARGETS FBX2glTF DESTINATION bin)

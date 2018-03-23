@@ -9,7 +9,9 @@
 #ifndef FBX2GLTF_MATHFU_H
 #define FBX2GLTF_MATHFU_H
 
+#ifdef HAVE_FBX
 #include <fbxsdk.h>
+#endif
 
 #include <mathfu/vector.h>
 #include <mathfu/matrix.h>
@@ -76,6 +78,7 @@ template<class T> std::vector<T> toStdVec(const mathfu::Quaternion<T> &quat) {
     return std::vector<T> { quat.vector()[0], quat.vector()[1], quat.vector()[2], quat.scalar() };
 }
 
+#ifdef HAVE_FBX
 static inline Vec3f toVec3f(const FbxVector4 &v) {
     return Vec3f((float) v[0], (float) v[1], (float) v[2]);
 }
@@ -97,5 +100,6 @@ static inline Mat4f toMat4f(const FbxAMatrix &m) {
 static inline Quatf toQuatf(const FbxQuaternion &q) {
     return Quatf((float) q[3], (float) q[0], (float) q[1], (float) q[2]);
 }
+#endif
 
 #endif //FBX2GLTF_MATHFU_H

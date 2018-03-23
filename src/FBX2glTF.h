@@ -19,8 +19,9 @@
 #endif
 
 #include <fmt/printf.h>
+#ifdef HAVE_FBX
 #include <fbxsdk.h>
-
+#endif
 #include "mathfu.h"
 
 #endif // !__FBX2GLTF_H__
